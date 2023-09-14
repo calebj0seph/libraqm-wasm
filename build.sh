@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+shopt -s nullglob
 
 # Dependencies
 HARFBUZZ_GIT_URL="https://github.com/harfbuzz/harfbuzz.git"
@@ -14,7 +15,7 @@ RAQM_GIT_DIR="raqm"
 
 # Cleanup
 function clean_build_dirs {
-  rm *.o
+  rm -f *.o
   rm -rf "$HARFBUZZ_GIT_DIR"
   rm -rf "$SHEENBIDI_GIT_DIR"
   rm -rf "$RAQM_GIT_DIR"
@@ -69,12 +70,10 @@ echo "Linking..."
 emcc \
   -flto \
   -Oz \
-  -I. \
-  -I"$HARFBUZZ_GIT_DIR/src" \
-  -I"$SHEENBIDI_GIT_DIR/Headers" \
   --no-entry \
   -s EXPORTED_FUNCTIONS=@libraqm-wasm.symbols \
   -s INITIAL_MEMORY=128MB \
+  -s INCOMING_MODULE_JS_API='["print", "printErr", "onAbort", "noExitRuntime", "noInitialRun"]' \
   -o raqm.wasm \
   harfbuzz-wasm.o \
   libraqm-wasm.o \
