@@ -15,13 +15,14 @@ RAQM_GIT_DIR="raqm"
 
 # Cleanup
 function clean_build_dirs {
-  rm -f *.o
+  rm -f *.o *.wasm
   rm -rf "$HARFBUZZ_GIT_DIR"
   rm -rf "$SHEENBIDI_GIT_DIR"
   rm -rf "$RAQM_GIT_DIR"
 }
 
 echo "Cleaning build directories..."
+rm -f *.js *.br
 clean_build_dirs
 
 # Clone repositories
@@ -71,10 +72,15 @@ emcc \
   -flto \
   -Oz \
   --no-entry \
-  -s EXPORTED_FUNCTIONS=@libraqm-wasm.symbols \
   -s INITIAL_MEMORY=128MB \
-  -s INCOMING_MODULE_JS_API='["print", "printErr", "onAbort", "noExitRuntime", "noInitialRun"]' \
-  -o raqm.wasm \
+  -s INCOMING_MODULE_JS_API='["print", "printErr", "onAbort"]' \
+  -s EXPORTED_FUNCTIONS=@libraqm-wasm.symbols \
+  -s FILESYSTEM=0 \
+  -s MODULARIZE=1 \
+  -s EXPORT_ES6=1 \
+  -s EXPORT_NAME="Raqm" \
+  -s STANDALONE_WASM=1 \
+  -o raqm.js \
   harfbuzz-wasm.o \
   libraqm-wasm.o \
 
