@@ -75,7 +75,6 @@ emcc \
   -s INITIAL_MEMORY=128MB \
   -s INCOMING_MODULE_JS_API='["print", "printErr", "onAbort"]' \
   -s EXPORTED_FUNCTIONS=@libraqm-wasm.symbols \
-  -s FILESYSTEM=0 \
   -s MODULARIZE=1 \
   -s EXPORT_ES6=1 \
   -s EXPORT_NAME="Raqm" \

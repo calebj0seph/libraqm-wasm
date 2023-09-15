@@ -1,5 +1,5 @@
 diff --git a/src/raqm.c b/src/raqm.c
-index 6486e36..268789a 100644
+index 6486e36..4d9d283 100644
 --- a/src/raqm.c
 +++ b/src/raqm.c
 @@ -36,7 +36,6 @@
@@ -294,7 +294,88 @@ index 6486e36..268789a 100644
      }
  
      count += len;
-@@ -1792,8 +1676,7 @@ _raqm_itemize (raqm_t *rq)
+@@ -1507,6 +1391,8 @@ static _raqm_bidi_run *
+ _raqm_bidi_itemize (raqm_t *rq, size_t *run_count)
+ {
+   _raqm_bidi_run *runs;
++  size_t run_offset;
++  size_t paragraph_offset;
+   SBAlgorithmRef bidi;
+   SBParagraphRef par;
+   SBUInteger par_len;
+@@ -1524,35 +1410,51 @@ _raqm_bidi_itemize (raqm_t *rq, size_t *run_count)
+   else if (rq->base_dir == RAQM_DIRECTION_LTR)
+     base_level = 0;
+ 
+-  /* paragraph */
++  // Initialise SheenBidi
+   bidi = SBAlgorithmCreate (&input);
+-  par = SBAlgorithmCreateParagraph (bidi, 0, INT32_MAX, base_level);
+-  par_len = SBParagraphGetLength (par);
+ 
+-  /* lines */
+-  line = SBParagraphCreateLine (par, 0, par_len);
+-  *run_count = SBLineGetRunCount (line);
++  // Create all paragraphs
++  runs = NULL;
++  run_offset = 0;
++  paragraph_offset = 0;
++  while (paragraph_offset < rq->text_len)
++  {
++    par = SBAlgorithmCreateParagraph (bidi, paragraph_offset, INT32_MAX, base_level);
++    par_len = SBParagraphGetLength (par);
+ 
+-  if (SBParagraphGetBaseLevel (par) == 1)
+-    rq->resolved_dir = RAQM_DIRECTION_RTL;
+-  else
+-    rq->resolved_dir = RAQM_DIRECTION_LTR;
++    // lines
++    line = SBParagraphCreateLine (par, paragraph_offset, par_len);
++    *run_count += SBLineGetRunCount (line);
+ 
+-  runs = malloc (sizeof (_raqm_bidi_run) * (*run_count));
+-  if (runs)
+-  {
+-    const SBRun *sheenbidi_runs = SBLineGetRunsPtr(line);
++    if (SBParagraphGetBaseLevel (par) == 1)
++      rq->resolved_dir = RAQM_DIRECTION_RTL;
++    else
++      rq->resolved_dir = RAQM_DIRECTION_LTR;
++
++    if (runs == NULL) {
++      runs = malloc (sizeof (_raqm_bidi_run) * (*run_count));
++    } else {
++      runs = realloc (runs, sizeof (_raqm_bidi_run) * (*run_count));
++    }
+ 
+-    for (size_t i = 0; i < (*run_count); ++i)
++    if (runs)
+     {
+-      runs[i].pos = sheenbidi_runs[i].offset;
+-      runs[i].len = sheenbidi_runs[i].length;
+-      runs[i].level = sheenbidi_runs[i].level;
++      const SBRun *sheenbidi_runs = SBLineGetRunsPtr(line);
++
++      for (size_t i = 0; run_offset < (*run_count); ++run_offset, ++i)
++      {
++        runs[run_offset].pos = sheenbidi_runs[i].offset;
++        runs[run_offset].len = sheenbidi_runs[i].length;
++        runs[run_offset].level = sheenbidi_runs[i].level;
++      }
+     }
++
++    paragraph_offset += par_len;
++
++    SBLineRelease (line);
++    SBParagraphRelease (par);
+   }
+ 
+-  SBLineRelease (line);
+-  SBParagraphRelease (par);
+   SBAlgorithmRelease (bidi);
+ 
+   return runs;
+@@ -1792,8 +1694,7 @@ _raqm_itemize (raqm_t *rq)
      {
        run->pos = runs[i].pos + runs[i].len - 1;
        run->script = rq->text_info[run->pos].script;
@@ -304,7 +385,7 @@ index 6486e36..268789a 100644
        for (int j = runs[i].len - 1; j >= 0; j--)
        {
          _raqm_text_info info = rq->text_info[runs[i].pos + j];
-@@ -1809,8 +1692,7 @@ _raqm_itemize (raqm_t *rq)
+@@ -1809,8 +1710,7 @@ _raqm_itemize (raqm_t *rq)
            newrun->len = 1;
            newrun->direction = _raqm_hb_dir (rq, runs[i].level);
            newrun->script = info.script;
@@ -314,7 +395,7 @@ index 6486e36..268789a 100644
            run->next = newrun;
            run = newrun;
          }
-@@ -1825,8 +1707,7 @@ _raqm_itemize (raqm_t *rq)
+@@ -1825,8 +1725,7 @@ _raqm_itemize (raqm_t *rq)
      {
        run->pos = runs[i].pos;
        run->script = rq->text_info[run->pos].script;
@@ -324,7 +405,7 @@ index 6486e36..268789a 100644
        for (size_t j = 0; j < runs[i].len; j++)
        {
          _raqm_text_info info = rq->text_info[runs[i].pos + j];
-@@ -1842,8 +1723,7 @@ _raqm_itemize (raqm_t *rq)
+@@ -1842,8 +1741,7 @@ _raqm_itemize (raqm_t *rq)
            newrun->len = 1;
            newrun->direction = _raqm_hb_dir (rq, runs[i].level);
            newrun->script = info.script;
@@ -334,7 +415,7 @@ index 6486e36..268789a 100644
            run->next = newrun;
            run = newrun;
          }
-@@ -1867,10 +1747,6 @@ _raqm_itemize (raqm_t *rq)
+@@ -1867,10 +1765,6 @@ _raqm_itemize (raqm_t *rq)
    for (raqm_run_t *run = rq->runs; run != NULL; run = run->next)
    {
      SCRIPT_TO_STRING (run->script);
@@ -345,7 +426,7 @@ index 6486e36..268789a 100644
    }
    RAQM_TEST ("\n");
  #endif
-@@ -2148,21 +2024,6 @@ _raqm_resolve_scripts (raqm_t *rq)
+@@ -2148,21 +2042,6 @@ _raqm_resolve_scripts (raqm_t *rq)
    return true;
  }
  
@@ -367,7 +448,7 @@ index 6486e36..268789a 100644
  static bool
  _raqm_shape (raqm_t *rq)
  {
-@@ -2190,20 +2051,15 @@ _raqm_shape (raqm_t *rq)
+@@ -2190,20 +2069,15 @@ _raqm_shape (raqm_t *rq)
                     NULL);
  
      {
@@ -388,7 +469,7 @@ index 6486e36..268789a 100644
          bool set_spacing = false;
          if (run->direction == HB_DIRECTION_RTL)
          {
-@@ -2695,107 +2551,3 @@ _raqm_in_hangul_syllable (hb_codepoint_t ch)
+@@ -2695,107 +2569,3 @@ _raqm_in_hangul_syllable (hb_codepoint_t ch)
    (void)ch;
    return false;
  }
