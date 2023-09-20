@@ -1,5 +1,5 @@
 diff --git a/src/raqm.c b/src/raqm.c
-index 6486e36..4d9d283 100644
+index 6486e36..e99b66a 100644
 --- a/src/raqm.c
 +++ b/src/raqm.c
 @@ -36,7 +36,6 @@
@@ -58,23 +58,20 @@ index 6486e36..4d9d283 100644
      free (run);
    }
  }
-@@ -878,22 +874,9 @@ raqm_add_font_feature (raqm_t     *rq,
+@@ -878,6 +874,7 @@ raqm_add_font_feature (raqm_t     *rq,
    return ok;
  }
  
--static hb_font_t *
--_raqm_create_hb_font (raqm_t *rq,
--                      FT_Face face,
--                      int     loadflags)
--{
--  hb_font_t *font = hb_ft_font_create_referenced (face);
--
--  if (loadflags >= 0)
--    hb_ft_font_set_load_flags (font, loadflags);
--
--  return font;
--}
--
++/*
+ static hb_font_t *
+ _raqm_create_hb_font (raqm_t *rq,
+                       FT_Face face,
+@@ -890,10 +887,11 @@ _raqm_create_hb_font (raqm_t *rq,
+ 
+   return font;
+ }
++*/
+ 
  static bool
 -_raqm_set_freetype_face (raqm_t *rq,
 -                         FT_Face face,
@@ -83,7 +80,7 @@ index 6486e36..4d9d283 100644
                           size_t  start,
                           size_t  end)
  {
-@@ -911,23 +894,23 @@ _raqm_set_freetype_face (raqm_t *rq,
+@@ -911,23 +909,23 @@ _raqm_set_freetype_face (raqm_t *rq,
  
    for (size_t i = start; i < end; i++)
    {
@@ -115,7 +112,7 @@ index 6486e36..4d9d283 100644
   *
   * Return value:
   * `true` if no errors happened, `false` otherwise.
-@@ -935,30 +918,30 @@ _raqm_set_freetype_face (raqm_t *rq,
+@@ -935,30 +933,30 @@ _raqm_set_freetype_face (raqm_t *rq,
   * Since: 0.1
   */
  bool
@@ -157,7 +154,7 @@ index 6486e36..4d9d283 100644
   *
   * Return value:
   * `true` if no errors happened, `false` otherwise.
-@@ -966,8 +949,8 @@ raqm_set_freetype_face (raqm_t *rq,
+@@ -966,8 +964,8 @@ raqm_set_freetype_face (raqm_t *rq,
   * Since: 0.1
   */
  bool
@@ -168,110 +165,58 @@ index 6486e36..4d9d283 100644
                                size_t  start,
                                size_t  len)
  {
-@@ -982,101 +965,7 @@ raqm_set_freetype_face_range (raqm_t *rq,
+@@ -982,9 +980,10 @@ raqm_set_freetype_face_range (raqm_t *rq,
    end = _raqm_encoding_to_u32_index (rq, start + len);
    start = _raqm_encoding_to_u32_index (rq, start);
  
 -  return _raqm_set_freetype_face (rq, face, start, end);
--}
--
--static bool
--_raqm_set_freetype_load_flags (raqm_t *rq,
--                               int     flags,
--                               size_t  start,
--                               size_t  end)
--{
--  if (!rq)
--    return false;
--
--  if (!rq->text_len)
--    return true;
--
--  if (start >= rq->text_len || end > rq->text_len)
--    return false;
--
--  if (!rq->text_info)
--    return false;
--
--  for (size_t i = start; i < end; i++)
--    rq->text_info[i].ftloadflags = flags;
--
--  return true;
--}
--
--/**
-- * raqm_set_freetype_load_flags:
-- * @rq: a #raqm_t.
-- * @flags: FreeType load flags.
-- *
-- * Sets the load flags passed to FreeType when loading glyphs, should be the
-- * same flags used by the client when rendering FreeType glyphs.
-- *
-- * This requires version of HarfBuzz that has hb_ft_font_set_load_flags(), for
-- * older version the flags will be ignored.
-- *
-- * Return value:
-- * `true` if no errors happened, `false` otherwise.
-- *
-- * Since: 0.3
-- */
--bool
--raqm_set_freetype_load_flags (raqm_t *rq,
--                              int     flags)
--{
--  return _raqm_set_freetype_load_flags(rq, flags, 0, rq->text_len);
--}
--
--/**
-- * raqm_set_freetype_load_flags_range:
-- * @rq: a #raqm_t.
-- * @flags: FreeType load flags.
-- * @start: index of first character that should use @flags.
-- * @len: number of characters using @flags.
-- *
-- * Sets the load flags passed to FreeType when loading glyphs for @len-number
-- * of characters staring at @start. Flags should be the same as used by the
-- * client when rendering corresponding FreeType glyphs. The @start and @len
-- * are input string array indices (i.e. counting bytes in UTF-8 and scaler
-- * values in UTF-32).
-- *
-- * This method can be used repeatedly to set different flags for different
-- * parts of the text. It is the responsibility of the client to make sure that
-- * flag ranges cover the whole text.
-- *
-- * This requires version of HarfBuzz that has hb_ft_font_set_load_flags(), for
-- * older version the flags will be ignored.
-- *
-- * See also raqm_set_freetype_load_flags().
-- *
-- * Return value:
-- * `true` if no errors happened, `false` otherwise.
-- *
-- * Since: 0.9
-- */
--bool
--raqm_set_freetype_load_flags_range (raqm_t *rq,
--                                    int     flags,
--                                    size_t  start,
--                                    size_t  len)
--{
--  size_t end;
--
--  if (!rq)
--    return false;
--
--  if (!rq->text_len)
--    return true;
--
--  end = _raqm_encoding_to_u32_index (rq, start + len);
--  start = _raqm_encoding_to_u32_index (rq, start);
--
--  return _raqm_set_freetype_load_flags (rq, flags, start, end);
 +  return _raqm_set_harfbuzz_font (rq, font, start, end);
  }
  
++/*
  static bool
-@@ -1290,7 +1179,7 @@ raqm_layout (raqm_t *rq)
+ _raqm_set_freetype_load_flags (raqm_t *rq,
+                                int     flags,
+@@ -1008,6 +1007,7 @@ _raqm_set_freetype_load_flags (raqm_t *rq,
+ 
+   return true;
+ }
++*/
+ 
+ /**
+  * raqm_set_freetype_load_flags:
+@@ -1025,12 +1025,14 @@ _raqm_set_freetype_load_flags (raqm_t *rq,
+  *
+  * Since: 0.3
+  */
++/*
+ bool
+ raqm_set_freetype_load_flags (raqm_t *rq,
+                               int     flags)
+ {
+   return _raqm_set_freetype_load_flags(rq, flags, 0, rq->text_len);
+ }
++*/
+ 
+ /**
+  * raqm_set_freetype_load_flags_range:
+@@ -1059,6 +1061,7 @@ raqm_set_freetype_load_flags (raqm_t *rq,
+  *
+  * Since: 0.9
+  */
++/*
+ bool
+ raqm_set_freetype_load_flags_range (raqm_t *rq,
+                                     int     flags,
+@@ -1078,6 +1081,7 @@ raqm_set_freetype_load_flags_range (raqm_t *rq,
+ 
+   return _raqm_set_freetype_load_flags (rq, flags, start, end);
+ }
++*/
+ 
+ static bool
+ _raqm_set_spacing (raqm_t *rq,
+@@ -1290,7 +1294,7 @@ raqm_layout (raqm_t *rq)
  
    for (size_t i = 0; i < rq->text_len; i++)
    {
@@ -280,7 +225,7 @@ index 6486e36..4d9d283 100644
            return false;
    }
  
-@@ -1376,12 +1265,7 @@ raqm_get_glyphs (raqm_t *rq,
+@@ -1376,12 +1380,7 @@ raqm_get_glyphs (raqm_t *rq,
        rq->glyphs[count + i].y_advance = position[i].y_advance;
        rq->glyphs[count + i].x_offset = position[i].x_offset;
        rq->glyphs[count + i].y_offset = position[i].y_offset;
@@ -294,7 +239,7 @@ index 6486e36..4d9d283 100644
      }
  
      count += len;
-@@ -1507,6 +1391,8 @@ static _raqm_bidi_run *
+@@ -1507,6 +1506,8 @@ static _raqm_bidi_run *
  _raqm_bidi_itemize (raqm_t *rq, size_t *run_count)
  {
    _raqm_bidi_run *runs;
@@ -303,7 +248,7 @@ index 6486e36..4d9d283 100644
    SBAlgorithmRef bidi;
    SBParagraphRef par;
    SBUInteger par_len;
-@@ -1524,35 +1410,51 @@ _raqm_bidi_itemize (raqm_t *rq, size_t *run_count)
+@@ -1524,35 +1525,51 @@ _raqm_bidi_itemize (raqm_t *rq, size_t *run_count)
    else if (rq->base_dir == RAQM_DIRECTION_LTR)
      base_level = 0;
  
@@ -341,14 +286,14 @@ index 6486e36..4d9d283 100644
 +      rq->resolved_dir = RAQM_DIRECTION_RTL;
 +    else
 +      rq->resolved_dir = RAQM_DIRECTION_LTR;
-+
+ 
+-    for (size_t i = 0; i < (*run_count); ++i)
 +    if (runs == NULL) {
 +      runs = malloc (sizeof (_raqm_bidi_run) * (*run_count));
 +    } else {
 +      runs = realloc (runs, sizeof (_raqm_bidi_run) * (*run_count));
 +    }
- 
--    for (size_t i = 0; i < (*run_count); ++i)
++
 +    if (runs)
      {
 -      runs[i].pos = sheenbidi_runs[i].offset;
@@ -375,7 +320,7 @@ index 6486e36..4d9d283 100644
    SBAlgorithmRelease (bidi);
  
    return runs;
-@@ -1792,8 +1694,7 @@ _raqm_itemize (raqm_t *rq)
+@@ -1792,8 +1809,7 @@ _raqm_itemize (raqm_t *rq)
      {
        run->pos = runs[i].pos + runs[i].len - 1;
        run->script = rq->text_info[run->pos].script;
@@ -385,7 +330,7 @@ index 6486e36..4d9d283 100644
        for (int j = runs[i].len - 1; j >= 0; j--)
        {
          _raqm_text_info info = rq->text_info[runs[i].pos + j];
-@@ -1809,8 +1710,7 @@ _raqm_itemize (raqm_t *rq)
+@@ -1809,8 +1825,7 @@ _raqm_itemize (raqm_t *rq)
            newrun->len = 1;
            newrun->direction = _raqm_hb_dir (rq, runs[i].level);
            newrun->script = info.script;
@@ -395,7 +340,7 @@ index 6486e36..4d9d283 100644
            run->next = newrun;
            run = newrun;
          }
-@@ -1825,8 +1725,7 @@ _raqm_itemize (raqm_t *rq)
+@@ -1825,8 +1840,7 @@ _raqm_itemize (raqm_t *rq)
      {
        run->pos = runs[i].pos;
        run->script = rq->text_info[run->pos].script;
@@ -405,7 +350,7 @@ index 6486e36..4d9d283 100644
        for (size_t j = 0; j < runs[i].len; j++)
        {
          _raqm_text_info info = rq->text_info[runs[i].pos + j];
-@@ -1842,8 +1741,7 @@ _raqm_itemize (raqm_t *rq)
+@@ -1842,8 +1856,7 @@ _raqm_itemize (raqm_t *rq)
            newrun->len = 1;
            newrun->direction = _raqm_hb_dir (rq, runs[i].level);
            newrun->script = info.script;
@@ -415,7 +360,7 @@ index 6486e36..4d9d283 100644
            run->next = newrun;
            run = newrun;
          }
-@@ -1867,10 +1765,6 @@ _raqm_itemize (raqm_t *rq)
+@@ -1867,10 +1880,6 @@ _raqm_itemize (raqm_t *rq)
    for (raqm_run_t *run = rq->runs; run != NULL; run = run->next)
    {
      SCRIPT_TO_STRING (run->script);
@@ -426,29 +371,23 @@ index 6486e36..4d9d283 100644
    }
    RAQM_TEST ("\n");
  #endif
-@@ -2148,21 +2042,6 @@ _raqm_resolve_scripts (raqm_t *rq)
+@@ -2148,6 +2157,7 @@ _raqm_resolve_scripts (raqm_t *rq)
    return true;
  }
  
--static void
--_raqm_ft_transform (int      *x,
--                    int      *y,
--                    FT_Matrix matrix)
--{
--  FT_Vector vector;
--  vector.x = *x;
--  vector.y = *y;
--
--  FT_Vector_Transform (&vector, &matrix);
--
--  *x = vector.x;
--  *y = vector.y;
--}
--
++/*
+ static void
+ _raqm_ft_transform (int      *x,
+                     int      *y,
+@@ -2162,6 +2172,7 @@ _raqm_ft_transform (int      *x,
+   *x = vector.x;
+   *y = vector.y;
+ }
++*/
+ 
  static bool
  _raqm_shape (raqm_t *rq)
- {
-@@ -2190,20 +2069,15 @@ _raqm_shape (raqm_t *rq)
+@@ -2190,20 +2201,15 @@ _raqm_shape (raqm_t *rq)
                     NULL);
  
      {
@@ -469,114 +408,52 @@ index 6486e36..4d9d283 100644
          bool set_spacing = false;
          if (run->direction == HB_DIRECTION_RTL)
          {
-@@ -2695,107 +2569,3 @@ _raqm_in_hangul_syllable (hb_codepoint_t ch)
-   (void)ch;
-   return false;
+@@ -2706,6 +2712,7 @@ _raqm_in_hangul_syllable (hb_codepoint_t ch)
+  *
+  * Since: 0.7
+  **/
++/*
+ void
+ raqm_version (unsigned int *major,
+               unsigned int *minor,
+@@ -2715,6 +2722,7 @@ raqm_version (unsigned int *major,
+   *minor = RAQM_VERSION_MINOR;
+   *micro = RAQM_VERSION_MICRO;
  }
--
--/**
-- * raqm_version:
-- * @major: (out): Library major version component.
-- * @minor: (out): Library minor version component.
-- * @micro: (out): Library micro version component.
-- *
-- * Returns library version as three integer components.
-- *
-- * Since: 0.7
-- **/
--void
--raqm_version (unsigned int *major,
--              unsigned int *minor,
--              unsigned int *micro)
--{
--  *major = RAQM_VERSION_MAJOR;
--  *minor = RAQM_VERSION_MINOR;
--  *micro = RAQM_VERSION_MICRO;
--}
--
--/**
-- * raqm_version_string:
-- *
-- * Returns library version as a string with three components.
-- *
-- * Return value: library version string.
-- *
-- * Since: 0.7
-- **/
--const char *
--raqm_version_string (void)
--{
--  return RAQM_VERSION_STRING;
--}
--
--/**
-- * raqm_version_atleast:
-- * @major: Library major version component.
-- * @minor: Library minor version component.
-- * @micro: Library micro version component.
-- *
-- * Checks if library version is less than or equal the specified version.
-- *
-- * Return value:
-- * `true` if library version is less than or equal the specified version,
-- * `false` otherwise.
-- *
-- * Since: 0.7
-- **/
--bool
--raqm_version_atleast (unsigned int major,
--                      unsigned int minor,
--                      unsigned int micro)
--{
--  return RAQM_VERSION_ATLEAST (major, minor, micro);
--}
--
--/**
-- * RAQM_VERSION_ATLEAST:
-- * @major: Library major version component.
-- * @minor: Library minor version component.
-- * @micro: Library micro version component.
-- *
-- * Checks if library version is less than or equal the specified version.
-- *
-- * Return value:
-- * `true` if library version is less than or equal the specified version,
-- * `false` otherwise.
-- *
-- * Since: 0.7
-- **/
--
--/**
-- * RAQM_VERSION_STRING:
-- *
-- * Library version as a string with three components.
-- *
-- * Since: 0.7
-- **/
--
--/**
-- * RAQM_VERSION_MAJOR:
-- *
-- * Library major version component.
-- *
-- * Since: 0.7
-- **/
--
--/**
-- * RAQM_VERSION_MINOR:
-- *
-- * Library minor version component.
-- *
-- * Since: 0.7
-- **/
--
--/**
-- * RAQM_VERSION_MICRO:
-- *
-- * Library micro version component.
-- *
-- * Since: 0.7
-- **/
++*/
+ 
+ /**
+  * raqm_version_string:
+@@ -2725,11 +2733,13 @@ raqm_version (unsigned int *major,
+  *
+  * Since: 0.7
+  **/
++/*
+ const char *
+ raqm_version_string (void)
+ {
+   return RAQM_VERSION_STRING;
+ }
++*/
+ 
+ /**
+  * raqm_version_atleast:
+@@ -2745,6 +2755,7 @@ raqm_version_string (void)
+  *
+  * Since: 0.7
+  **/
++/*
+ bool
+ raqm_version_atleast (unsigned int major,
+                       unsigned int minor,
+@@ -2752,6 +2763,7 @@ raqm_version_atleast (unsigned int major,
+ {
+   return RAQM_VERSION_ATLEAST (major, minor, micro);
+ }
++*/
+ 
+ /**
+  * RAQM_VERSION_ATLEAST:
 diff --git a/src/raqm.h b/src/raqm.h
 index 6fd6089..baf4c1e 100644
 --- a/src/raqm.h
