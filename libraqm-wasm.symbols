@@ -21,6 +21,7 @@ _raqm_position_to_index
 _raqm_reference
 _raqm_set_harfbuzz_font
 _raqm_set_harfbuzz_font_range
+_raqm_add_font_feature
 _raqm_set_invisible_glyph
 _raqm_set_language
 _raqm_set_par_direction
