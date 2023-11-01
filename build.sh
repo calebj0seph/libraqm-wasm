@@ -4,7 +4,7 @@ shopt -s nullglob
 
 # Dependencies
 HARFBUZZ_GIT_URL="https://github.com/harfbuzz/harfbuzz.git"
-HARFBUZZ_GIT_TAG="8.2.0"
+HARFBUZZ_GIT_TAG="8.2.2"
 HARFBUZZ_GIT_DIR="harfbuzz"
 SHEENBIDI_GIT_URL="https://github.com/Tehreer/SheenBidi.git"
 SHEENBIDI_GIT_TAG="v2.6"
