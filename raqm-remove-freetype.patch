@@ -1,5 +1,5 @@
 diff --git a/src/raqm.c b/src/raqm.c
-index 6486e36..e99b66a 100644
+index 6486e36..3fa9820 100644
 --- a/src/raqm.c
 +++ b/src/raqm.c
 @@ -36,7 +36,6 @@
@@ -28,18 +28,20 @@ index 6486e36..e99b66a 100644
      rq->text_info[i].ftloadflags = -1;
      rq->text_info[i].lang = default_lang;
      rq->text_info[i].script = HB_SCRIPT_INVALID;
-@@ -248,8 +247,8 @@ _raqm_release_text_info (raqm_t *rq)
+@@ -248,8 +247,10 @@ _raqm_release_text_info (raqm_t *rq)
  
    for (size_t i = 0; i < rq->text_len; i++)
    {
 -    if (rq->text_info[i].ftface)
 -      FT_Done_Face (rq->text_info[i].ftface);
-+    if (rq->text_info[i].hbfont)
++    if (rq->text_info[i].hbfont) {
 +      hb_font_destroy (rq->text_info[i].hbfont);
++      rq->text_info[i].hbfont = NULL;
++    }
    }
  }
  
-@@ -257,7 +256,7 @@ static bool
+@@ -257,7 +258,7 @@ static bool
  _raqm_compare_text_info (_raqm_text_info a,
                           _raqm_text_info b)
  {
@@ -48,7 +50,7 @@ index 6486e36..e99b66a 100644
      return false;
  
    if (a.ftloadflags != b.ftloadflags)
-@@ -354,9 +353,6 @@ _raqm_free_runs (raqm_run_t *runs)
+@@ -354,9 +355,6 @@ _raqm_free_runs (raqm_run_t *runs)
      if (run->buffer)
        hb_buffer_destroy (run->buffer);
  
@@ -58,7 +60,17 @@ index 6486e36..e99b66a 100644
      free (run);
    }
  }
-@@ -878,6 +874,7 @@ raqm_add_font_feature (raqm_t     *rq,
+@@ -481,7 +479,8 @@ raqm_clear_contents (raqm_t *rq)
+ 
+     if (run->font)
+     {
+-      hb_font_destroy (run->font);
++      // No need to call hb_font_destroy, as _raqm_release_text_info has
++      // already done that
+       run->font = NULL;
+     }
+ 
+@@ -878,6 +877,7 @@ raqm_add_font_feature (raqm_t     *rq,
    return ok;
  }
  
@@ -66,7 +78,7 @@ index 6486e36..e99b66a 100644
  static hb_font_t *
  _raqm_create_hb_font (raqm_t *rq,
                        FT_Face face,
-@@ -890,10 +887,11 @@ _raqm_create_hb_font (raqm_t *rq,
+@@ -890,10 +890,11 @@ _raqm_create_hb_font (raqm_t *rq,
  
    return font;
  }
@@ -80,7 +92,7 @@ index 6486e36..e99b66a 100644
                           size_t  start,
                           size_t  end)
  {
-@@ -911,23 +909,23 @@ _raqm_set_freetype_face (raqm_t *rq,
+@@ -911,23 +912,23 @@ _raqm_set_freetype_face (raqm_t *rq,
  
    for (size_t i = start; i < end; i++)
    {
@@ -112,7 +124,7 @@ index 6486e36..e99b66a 100644
   *
   * Return value:
   * `true` if no errors happened, `false` otherwise.
-@@ -935,30 +933,30 @@ _raqm_set_freetype_face (raqm_t *rq,
+@@ -935,30 +936,30 @@ _raqm_set_freetype_face (raqm_t *rq,
   * Since: 0.1
   */
  bool
@@ -154,7 +166,7 @@ index 6486e36..e99b66a 100644
   *
   * Return value:
   * `true` if no errors happened, `false` otherwise.
-@@ -966,8 +964,8 @@ raqm_set_freetype_face (raqm_t *rq,
+@@ -966,8 +967,8 @@ raqm_set_freetype_face (raqm_t *rq,
   * Since: 0.1
   */
  bool
@@ -165,7 +177,7 @@ index 6486e36..e99b66a 100644
                                size_t  start,
                                size_t  len)
  {
-@@ -982,9 +980,10 @@ raqm_set_freetype_face_range (raqm_t *rq,
+@@ -982,9 +983,10 @@ raqm_set_freetype_face_range (raqm_t *rq,
    end = _raqm_encoding_to_u32_index (rq, start + len);
    start = _raqm_encoding_to_u32_index (rq, start);
  
@@ -177,7 +189,7 @@ index 6486e36..e99b66a 100644
  static bool
  _raqm_set_freetype_load_flags (raqm_t *rq,
                                 int     flags,
-@@ -1008,6 +1007,7 @@ _raqm_set_freetype_load_flags (raqm_t *rq,
+@@ -1008,6 +1010,7 @@ _raqm_set_freetype_load_flags (raqm_t *rq,
  
    return true;
  }
@@ -185,7 +197,7 @@ index 6486e36..e99b66a 100644
  
  /**
   * raqm_set_freetype_load_flags:
-@@ -1025,12 +1025,14 @@ _raqm_set_freetype_load_flags (raqm_t *rq,
+@@ -1025,12 +1028,14 @@ _raqm_set_freetype_load_flags (raqm_t *rq,
   *
   * Since: 0.3
   */
@@ -200,7 +212,7 @@ index 6486e36..e99b66a 100644
  
  /**
   * raqm_set_freetype_load_flags_range:
-@@ -1059,6 +1061,7 @@ raqm_set_freetype_load_flags (raqm_t *rq,
+@@ -1059,6 +1064,7 @@ raqm_set_freetype_load_flags (raqm_t *rq,
   *
   * Since: 0.9
   */
@@ -208,7 +220,7 @@ index 6486e36..e99b66a 100644
  bool
  raqm_set_freetype_load_flags_range (raqm_t *rq,
                                      int     flags,
-@@ -1078,6 +1081,7 @@ raqm_set_freetype_load_flags_range (raqm_t *rq,
+@@ -1078,6 +1084,7 @@ raqm_set_freetype_load_flags_range (raqm_t *rq,
  
    return _raqm_set_freetype_load_flags (rq, flags, start, end);
  }
@@ -216,7 +228,7 @@ index 6486e36..e99b66a 100644
  
  static bool
  _raqm_set_spacing (raqm_t *rq,
-@@ -1290,7 +1294,7 @@ raqm_layout (raqm_t *rq)
+@@ -1290,7 +1297,7 @@ raqm_layout (raqm_t *rq)
  
    for (size_t i = 0; i < rq->text_len; i++)
    {
@@ -225,7 +237,7 @@ index 6486e36..e99b66a 100644
            return false;
    }
  
-@@ -1376,12 +1380,7 @@ raqm_get_glyphs (raqm_t *rq,
+@@ -1376,12 +1383,7 @@ raqm_get_glyphs (raqm_t *rq,
        rq->glyphs[count + i].y_advance = position[i].y_advance;
        rq->glyphs[count + i].x_offset = position[i].x_offset;
        rq->glyphs[count + i].y_offset = position[i].y_offset;
@@ -239,7 +251,7 @@ index 6486e36..e99b66a 100644
      }
  
      count += len;
-@@ -1507,6 +1506,8 @@ static _raqm_bidi_run *
+@@ -1507,6 +1509,8 @@ static _raqm_bidi_run *
  _raqm_bidi_itemize (raqm_t *rq, size_t *run_count)
  {
    _raqm_bidi_run *runs;
@@ -248,7 +260,7 @@ index 6486e36..e99b66a 100644
    SBAlgorithmRef bidi;
    SBParagraphRef par;
    SBUInteger par_len;
-@@ -1524,35 +1525,51 @@ _raqm_bidi_itemize (raqm_t *rq, size_t *run_count)
+@@ -1524,35 +1528,51 @@ _raqm_bidi_itemize (raqm_t *rq, size_t *run_count)
    else if (rq->base_dir == RAQM_DIRECTION_LTR)
      base_level = 0;
  
@@ -320,7 +332,7 @@ index 6486e36..e99b66a 100644
    SBAlgorithmRelease (bidi);
  
    return runs;
-@@ -1792,8 +1809,7 @@ _raqm_itemize (raqm_t *rq)
+@@ -1792,8 +1812,7 @@ _raqm_itemize (raqm_t *rq)
      {
        run->pos = runs[i].pos + runs[i].len - 1;
        run->script = rq->text_info[run->pos].script;
@@ -330,7 +342,7 @@ index 6486e36..e99b66a 100644
        for (int j = runs[i].len - 1; j >= 0; j--)
        {
          _raqm_text_info info = rq->text_info[runs[i].pos + j];
-@@ -1809,8 +1825,7 @@ _raqm_itemize (raqm_t *rq)
+@@ -1809,8 +1828,7 @@ _raqm_itemize (raqm_t *rq)
            newrun->len = 1;
            newrun->direction = _raqm_hb_dir (rq, runs[i].level);
            newrun->script = info.script;
@@ -340,7 +352,7 @@ index 6486e36..e99b66a 100644
            run->next = newrun;
            run = newrun;
          }
-@@ -1825,8 +1840,7 @@ _raqm_itemize (raqm_t *rq)
+@@ -1825,8 +1843,7 @@ _raqm_itemize (raqm_t *rq)
      {
        run->pos = runs[i].pos;
        run->script = rq->text_info[run->pos].script;
@@ -350,7 +362,7 @@ index 6486e36..e99b66a 100644
        for (size_t j = 0; j < runs[i].len; j++)
        {
          _raqm_text_info info = rq->text_info[runs[i].pos + j];
-@@ -1842,8 +1856,7 @@ _raqm_itemize (raqm_t *rq)
+@@ -1842,8 +1859,7 @@ _raqm_itemize (raqm_t *rq)
            newrun->len = 1;
            newrun->direction = _raqm_hb_dir (rq, runs[i].level);
            newrun->script = info.script;
@@ -360,7 +372,7 @@ index 6486e36..e99b66a 100644
            run->next = newrun;
            run = newrun;
          }
-@@ -1867,10 +1880,6 @@ _raqm_itemize (raqm_t *rq)
+@@ -1867,10 +1883,6 @@ _raqm_itemize (raqm_t *rq)
    for (raqm_run_t *run = rq->runs; run != NULL; run = run->next)
    {
      SCRIPT_TO_STRING (run->script);
@@ -371,7 +383,7 @@ index 6486e36..e99b66a 100644
    }
    RAQM_TEST ("\n");
  #endif
-@@ -2148,6 +2157,7 @@ _raqm_resolve_scripts (raqm_t *rq)
+@@ -2148,6 +2160,7 @@ _raqm_resolve_scripts (raqm_t *rq)
    return true;
  }
  
@@ -379,7 +391,7 @@ index 6486e36..e99b66a 100644
  static void
  _raqm_ft_transform (int      *x,
                      int      *y,
-@@ -2162,6 +2172,7 @@ _raqm_ft_transform (int      *x,
+@@ -2162,6 +2175,7 @@ _raqm_ft_transform (int      *x,
    *x = vector.x;
    *y = vector.y;
  }
@@ -387,7 +399,7 @@ index 6486e36..e99b66a 100644
  
  static bool
  _raqm_shape (raqm_t *rq)
-@@ -2190,20 +2201,15 @@ _raqm_shape (raqm_t *rq)
+@@ -2190,20 +2204,15 @@ _raqm_shape (raqm_t *rq)
                     NULL);
  
      {
@@ -408,7 +420,7 @@ index 6486e36..e99b66a 100644
          bool set_spacing = false;
          if (run->direction == HB_DIRECTION_RTL)
          {
-@@ -2706,6 +2712,7 @@ _raqm_in_hangul_syllable (hb_codepoint_t ch)
+@@ -2706,6 +2715,7 @@ _raqm_in_hangul_syllable (hb_codepoint_t ch)
   *
   * Since: 0.7
   **/
@@ -416,7 +428,7 @@ index 6486e36..e99b66a 100644
  void
  raqm_version (unsigned int *major,
                unsigned int *minor,
-@@ -2715,6 +2722,7 @@ raqm_version (unsigned int *major,
+@@ -2715,6 +2725,7 @@ raqm_version (unsigned int *major,
    *minor = RAQM_VERSION_MINOR;
    *micro = RAQM_VERSION_MICRO;
  }
@@ -424,7 +436,7 @@ index 6486e36..e99b66a 100644
  
  /**
   * raqm_version_string:
-@@ -2725,11 +2733,13 @@ raqm_version (unsigned int *major,
+@@ -2725,11 +2736,13 @@ raqm_version (unsigned int *major,
   *
   * Since: 0.7
   **/
@@ -438,7 +450,7 @@ index 6486e36..e99b66a 100644
  
  /**
   * raqm_version_atleast:
-@@ -2745,6 +2755,7 @@ raqm_version_string (void)
+@@ -2745,6 +2758,7 @@ raqm_version_string (void)
   *
   * Since: 0.7
   **/
@@ -446,7 +458,7 @@ index 6486e36..e99b66a 100644
  bool
  raqm_version_atleast (unsigned int major,
                        unsigned int minor,
-@@ -2752,6 +2763,7 @@ raqm_version_atleast (unsigned int major,
+@@ -2752,6 +2766,7 @@ raqm_version_atleast (unsigned int major,
  {
    return RAQM_VERSION_ATLEAST (major, minor, micro);
  }
