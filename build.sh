@@ -72,7 +72,9 @@ emcc \
   -flto \
   -Oz \
   --no-entry \
-  -s INITIAL_MEMORY=128MB \
+  -s INITIAL_MEMORY=32MB \
+  -s MAXIMUM_MEMORY=128MB \
+  -s ALLOW_MEMORY_GROWTH=1 \
   -s INCOMING_MODULE_JS_API='["print", "printErr", "onAbort"]' \
   -s EXPORTED_FUNCTIONS=@libraqm-wasm.symbols \
   -s MODULARIZE=1 \
